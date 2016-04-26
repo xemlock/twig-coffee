@@ -1,0 +1,29 @@
+{
+    "name": "xemlock/twig-coffee",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "xemlock",
+            "email": "xemlock@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.2.7",
+        "twig/twig": "^1.24",
+        "coffeescript/coffeescript": "^1.3"
+    },
+    "require-dev": {
+        "phpunit/PHPUnit": "~4.0"
+    },
+    "suggest": {
+        "patchwork/jsqueeze": "Minification of compiled JavaScript code using JSqueeze",
+        "tedivm/jshrink": "Minification of compiled JavaScript code using JShrink",
+        "mrclay/minify": "Minification of compiled JavaScript code using JSMinPlus"
+    },
+    "autoload": {
+        "psr-0": {
+            "TwigCoffee_": "library/"
+        }
+    }
+}
