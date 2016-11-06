@@ -1,4 +1,6 @@
-vendor
+build/
+vendor/
+composer.phar
 composer.lock
 
 *.swp
