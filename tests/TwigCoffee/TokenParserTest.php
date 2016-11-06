@@ -111,6 +111,13 @@ EOF
 EOF
         ))->getNode('body')->getNode(0);
 
+        $this->assertCoffeeNode(
+            array(
+                'minify' => false,
+                'script' => 'console.log foo, baz',
+            ),
+            $node
+        );
         // print_r($node);
     }
 
@@ -126,7 +133,14 @@ EOF
 EOF
         ))->getNode('body')->getNode(0);
 
-        print_r($node);
+        $this->assertCoffeeNode(
+            array(
+                'minify' => false,
+                'script' => 'console.log foo',
+            ),
+            $node
+        );
+        // print_r($node);
     }
 
     public function testParseWithVariable()
