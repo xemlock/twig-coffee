@@ -39,11 +39,10 @@ class TwigCoffee_TokenParser extends Twig_TokenParser
 
         $contents = $this->parser->subparse(array($this, 'decideIfEnd'), true);
 
-
-        if (!$contents->hasAttribute('data')) {
-            // if node has subnodes, and no data means that it's not a constant sctring
+        if (!$contents instanceof Twig_Node_Text) {
+            // if node is not a text node and has subnodes it means that it contains other tags
             if (count($contents)) {
-                throw new Twig_Error_Syntax('CoffeeScript source must not contain any Twig tags');
+                throw new Twig_Error_Syntax('CoffeeScript source must not contain any Twig tags', $contents->getTemplateLine(), $contents->getTemplateName());
             }
             $script = '';
         } else {
