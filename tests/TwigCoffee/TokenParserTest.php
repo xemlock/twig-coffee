@@ -155,6 +155,27 @@ EOF
         // print_r($node);
     }
 
+    public function testParseWithInlineHashQuotedKey()
+    {
+        $twig = $this->getTwigEnvironment();
+
+        $node = $twig->parse($twig->tokenize(<<<EOF
+{% coffee with {'foo': 'bar'} %}
+    console.log foo
+{% endcoffee %}
+EOF
+        ))->getNode('body')->getNode(0);
+
+        $this->assertCoffeeNode(
+            array(
+                'minify' => false,
+                'script' => 'console.log foo',
+            ),
+            $node
+        );
+        // print_r($node);
+    }
+
     /**
      * @expectedException Twig_Error_Syntax
      * @expectedExceptionMessage Invalid variable name "true"
@@ -181,6 +202,22 @@ EOF
 
         $twig->parse($twig->tokenize(<<<EOF
 {% coffee with {1: 1} %}
+    console.log true
+{% endcoffee %}
+EOF
+        ));
+    }
+
+    /**
+     * @expectedException Twig_Error_Syntax
+     * @expectedExceptionMessage Only constant expressions can be used as variable names
+     */
+    public function testParseWithInlineHashComputedKey()
+    {
+        $twig = $this->getTwigEnvironment();
+
+        $twig->parse($twig->tokenize(<<<EOF
+{% coffee with {('foo' ~ 'bar'): 'baz'} %}
     console.log true
 {% endcoffee %}
 EOF

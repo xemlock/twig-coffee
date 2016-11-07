@@ -1,7 +1,14 @@
 <?php
 
+use CoffeeScript\Lexer;
+
 class TwigCoffee_TokenParser extends Twig_TokenParser
 {
+    public function __construct()
+    {
+        Lexer::init();
+    }
+
     public function parse(Twig_Token $token)
     {
         $stream = $this->parser->getStream();
@@ -77,10 +84,10 @@ class TwigCoffee_TokenParser extends Twig_TokenParser
 
     public function isValidVariableName($name)
     {
-        if (!is_string($name) || !preg_match('/^[_a-z][_a-z0-9]*$/i', $name)) {
+        if (!is_string($name) || !preg_match(Lexer::$IDENTIFIER, $name)) {
             return false;
         }
-        if (in_array(strtolower($name), $this->getKeywords())) {
+        if (in_array($name, Lexer::$COFFEE_RESERVED)) {
             return false;
         }
         return true;
@@ -124,81 +131,5 @@ class TwigCoffee_TokenParser extends Twig_TokenParser
         }
 
         return $hash;
-    }
-
-    public function getKeywords()
-    {
-        return explode("\n", <<<EOF
-for
-while
-loop
-by
-in
-of
-break
-continue
-if
-then
-else
-unless
-switch
-when
-default
-return
-do
-is
-isnt
-and
-or
-not
-true
-yes
-on
-true
-false
-no
-off
-false
-throw
-try
-catch
-finally
-new
-delete
-class
-extends
-super
-typeof
-instanceof
-this
-arguments
-await
-defer
-yield
-null
-undefined
-Infinity
-NaN
-export
-import
-package
-let
-case
-debugger
-function
-var
-with
-private
-protected
-public
-native
-static
-const
-implements
-interface
-void
-enum
-EOF
-        );
     }
 }
