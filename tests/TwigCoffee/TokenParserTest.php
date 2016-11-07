@@ -120,8 +120,9 @@ EOF
 
     /**
      * @expectedException Twig_Error_Syntax
+     * @expectedExceptionMessage Invalid variable name "true"
      */
-    public function testParseWithKeyword()
+    public function testParseWithKeywordVariable()
     {
         $twig = $this->getTwigEnvironment();
 
@@ -133,8 +134,8 @@ EOF
         ));
     }
 
-    public function testParseWithInlineDictionary()
-    {return;
+    public function testParseWithInlineHash()
+    {
         $twig = $this->getTwigEnvironment();
 
         $node = $twig->parse($twig->tokenize(<<<EOF
@@ -152,5 +153,37 @@ EOF
             $node
         );
         // print_r($node);
+    }
+
+    /**
+     * @expectedException Twig_Error_Syntax
+     * @expectedExceptionMessage Invalid variable name "true"
+     */
+    public function testParseWithInlineHashKeywordKey()
+    {
+        $twig = $this->getTwigEnvironment();
+
+        $twig->parse($twig->tokenize(<<<EOF
+{% coffee with {true: 'false'} %}
+    console.log true
+{% endcoffee %}
+EOF
+        ));
+    }
+
+    /**
+     * @expectedException Twig_Error_Syntax
+     * @expectedExceptionMessage Invalid variable name "1"
+     */
+    public function testParseWithInlineHashNumericKey()
+    {
+        $twig = $this->getTwigEnvironment();
+
+        $twig->parse($twig->tokenize(<<<EOF
+{% coffee with {1: 1} %}
+    console.log true
+{% endcoffee %}
+EOF
+        ));
     }
 }
