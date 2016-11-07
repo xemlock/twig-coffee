@@ -58,6 +58,25 @@ EOF
         );
     }
 
+    public function testParseEmpty()
+    {
+        $twig = $this->getTwigEnvironment();
+
+        $node = $twig->parse($twig->tokenize(<<<EOF
+{% coffee %}
+{% endcoffee %}
+EOF
+        ))->getNode('body')->getNode(0);
+
+        $this->assertCoffeeNode(
+            array(
+                'minify' => false,
+                'script' => '',
+            ),
+            $node
+        );
+    }
+
     public function testParseMinify()
     {
         $twig = $this->getTwigEnvironment();
@@ -78,71 +97,6 @@ EOF
         );
     }
 
-    public function testParseWithVariableAssignment()
-    {
-        $twig = $this->getTwigEnvironment();
-
-        $node = $twig->parse($twig->tokenize(<<<EOF
-{% coffee with foo='bar' %}
-    console.log foo
-{% endcoffee %}
-EOF
-        ))->getNode('body')->getNode(0);
-
-        $this->assertCoffeeNode(
-            array(
-                'minify' => false,
-                'script' => 'console.log foo',
-            ),
-            $node
-        );
-
-        // print_r($node);
-    }
-
-    public function testParseWithMultipleVariableAssignments()
-    {return;
-        $twig = $this->getTwigEnvironment();
-
-        $node = $twig->parse($twig->tokenize(<<<EOF
-{% coffee with foo, baz = 'bar', 'qux' %}
-    console.log foo, baz
-{% endcoffee %}
-EOF
-        ))->getNode('body')->getNode(0);
-
-        $this->assertCoffeeNode(
-            array(
-                'minify' => false,
-                'script' => 'console.log foo, baz',
-            ),
-            $node
-        );
-        // print_r($node);
-    }
-
-
-    public function testParseWithInlineDictionary()
-    {
-        $twig = $this->getTwigEnvironment();
-
-        $node = $twig->parse($twig->tokenize(<<<EOF
-{% coffee with {foo: 'bar'} %}
-    console.log foo
-{% endcoffee %}
-EOF
-        ))->getNode('body')->getNode(0);
-
-        $this->assertCoffeeNode(
-            array(
-                'minify' => false,
-                'script' => 'console.log foo',
-            ),
-            $node
-        );
-        // print_r($node);
-    }
-
     public function testParseWithVariable()
     {
         $twig = $this->getTwigEnvironment();
@@ -158,6 +112,42 @@ EOF
             array(
                 'minify' => false,
                 'script' => 'console.log foo.bar',
+            ),
+            $node
+        );
+        // print_r($node);
+    }
+
+    /**
+     * @expectedException Twig_Error_Syntax
+     */
+    public function testParseWithKeyword()
+    {
+        $twig = $this->getTwigEnvironment();
+
+        $twig->parse($twig->tokenize(<<<EOF
+{% coffee with true %}
+    console.log true
+{% endcoffee %}
+EOF
+        ));
+    }
+
+    public function testParseWithInlineDictionary()
+    {return;
+        $twig = $this->getTwigEnvironment();
+
+        $node = $twig->parse($twig->tokenize(<<<EOF
+{% coffee with {foo: 'bar'} %}
+    console.log foo
+{% endcoffee %}
+EOF
+        ))->getNode('body')->getNode(0);
+
+        $this->assertCoffeeNode(
+            array(
+                'minify' => false,
+                'script' => 'console.log foo',
             ),
             $node
         );

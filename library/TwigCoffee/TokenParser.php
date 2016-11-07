@@ -31,8 +31,13 @@ class TwigCoffee_TokenParser extends Twig_TokenParser
         $stream->expect(Twig_Token::BLOCK_END_TYPE);
 
         $script = $this->parser->subparse(array($this, 'decideIfEnd'), true);
+
         if (!$script->hasAttribute('data')) {
-            throw new Twig_Error_Syntax('CoffeeScript source must not contain any Twig tags');
+            // if node has subnodes no data means that it's not a constant sctring
+            if (count($script)) {
+                throw new Twig_Error_Syntax('CoffeeScript source must not contain any Twig tags');
+            }
+            $script = new Twig_Node_Text('', $script->getTemplateLine());
         }
 
         $stream->expect(Twig_Token::BLOCK_END_TYPE);
@@ -40,45 +45,24 @@ class TwigCoffee_TokenParser extends Twig_TokenParser
         return new TwigCoffee_Node(compact('script', 'variables'), $attributes, $token->getLine(), $this->getTag());
     }
 
+    /**
+     * @param Twig_Token $token
+     * @return Twig_Node_Expression_Array|Twig_Node_Expression_Name
+     * @throws Exception
+     * @throws Twig_Error_Syntax
+     */
     public function parseWith(Twig_Token $token)
     {
-        // idea based on https://gist.github.com/xphere/5410937
-
         $stream = $this->parser->getStream();
-        $lineno = $token->getLine();
 
-        $this->assertCurrent(__METHOD__, Twig_Token::NAME_TYPE, 'with');
-        $stream->next();
+        // tests if current token is 'with', and moves to next one
+        $stream->expect(Twig_Token::NAME_TYPE, 'with');
 
         if ($stream->test(Twig_Token::PUNCTUATION_TYPE, '{')) {
-            return $this->parseInlineObject($lineno);
-
+            return $this->parseInlineHash();
         } else {
-            // 0: name, 1: block_end
-            if ($stream->look(1)->getType() === Twig_Token::BLOCK_END_TYPE) {
-                return $this->parseAssignmentTarget();
-
-            } else {
-                $expressionParser = $this->parser->getExpressionParser();
-                $names = $expressionParser->parseAssignmentExpression();
-                $stream->expect(Twig_Token::OPERATOR_TYPE, '=');
-                $values = $expressionParser->parseMultitargetExpression();
-
-                if (count($names) !== count($values)) {
-                    throw new Twig_Error_Syntax(
-                        'When using with, you must have the same number of variables and assignments.',
-                        $stream->getCurrent()->getLine(), $stream->getFilename()
-                    );
-                }
-
-                return new Twig_Node(array('names' => $names, 'values' => $values));
-            }
+            return $this->parseVariableName();
         }
-    }
-
-    protected function parseInlineObject($lineno)
-    {
-        return $this->parser->getExpressionParser()->parseHashExpression();
     }
 
     public function getTag()
@@ -91,37 +75,130 @@ class TwigCoffee_TokenParser extends Twig_TokenParser
         return $token->test(array('end' . $this->getTag()));
     }
 
-    /**
-     * @internal
-     */
-    public function assertCurrent($method, $type, $value)
+    public function isValidVariableName($name)
     {
-        $current = $this->parser->getStream()->getCurrent();
-
-        if ($current->getType() !== $type || $current->getValue() !== $value) {
-            throw new Exception(sprintf(
-                '%s expects current token to be %s "%s", received %s "%s"',
-                $method,
-                Twig_Token::typeToEnglish($type),
-                $value,
-                Twig_Token::typeToEnglish($current->getType()),
-                $current->getValue()
-            ));
+        if (!is_string($name) || !preg_match('/^[_a-z][_a-z0-9]*$/i', $name)) {
+            return false;
         }
+        if (in_array(strtolower($name), $this->getKeywords())) {
+            return false;
+        }
+        return true;
     }
 
-    public function parseAssignmentTarget()
+    public function parseVariableName()
     {
         $stream = $this->parser->getStream();
-        $names = array();
 
-        $token = $stream->expect(Twig_Token::NAME_TYPE, null, 'Only variables can be assigned to');
+        $token = $stream->expect(Twig_Token::NAME_TYPE, null, 'Expected variable name');
         $value = $token->getValue();
-        if (in_array(strtolower($value), array('true', 'false', 'none', 'null'))) {
-            throw new Twig_Error_Syntax(sprintf('You cannot assign a value to "%s".', $value), $token->getLine(), $stream->getSourceContext()->getName());
+        if (!$this->isValidVariableName($value)) {
+            throw new Twig_Error_Syntax(sprintf('Invalid variable name "%s".', $value), $token->getLine(), $stream->getSourceContext()->getName());
         }
-        $names[] = new Twig_Node_Expression_AssignName($value, $token->getLine());
+        $name = new Twig_Node_Expression_Name($value, $token->getLine());
 
-        return new Twig_Node($names);
+        return $name;
+    }
+
+    public function parseInlineHash()
+    {
+        $hash = $this->parser->getExpressionParser()->parseHashExpression();
+
+        // check if all hash keys are constant strings
+        foreach ($hash as $index => $node) {
+            /** @var Twig_Node $node */
+
+            // skip value nodes
+            if ($index % 2) {
+                continue;
+            }
+
+            if (!$node instanceof Twig_Node_Expression_Constant) {
+                throw new Twig_Error_Syntax('Only constant expressions can be used as variable names.', $node->getTemplateLine(), $node->getTemplateName());
+            }
+
+            $value = $node->getAttribute('value');
+            if (!$this->isValidVariableName($value)) {
+                throw new Twig_Error_Syntax(sprintf('Invalid variable name "%s".', $value), $node->getTemplateLine(), $node->getTemplateName());
+            }
+        }
+
+        return $hash;
+    }
+
+    public function getKeywords()
+    {
+        return explode("\n", <<<EOF
+for
+while
+loop
+by
+in
+of
+break
+continue
+if
+then
+else
+unless
+switch
+when
+default
+return
+do
+is
+isnt
+and
+or
+not
+true
+yes
+on
+true
+false
+no
+off
+false
+throw
+try
+catch
+finally
+new
+delete
+class
+extends
+super
+typeof
+instanceof
+this
+arguments
+await
+defer
+yield
+null
+undefined
+Infinity
+NaN
+export
+import
+package
+let
+case
+debugger
+function
+var
+with
+private
+protected
+public
+native
+static
+const
+implements
+interface
+void
+enum
+EOF
+        );
     }
 }
