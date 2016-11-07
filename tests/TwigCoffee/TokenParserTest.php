@@ -29,9 +29,11 @@ class TwigCoffee_TokenParserTest extends PHPUnit_Framework_TestCase
     {
         $this->assertInstanceOf('TwigCoffee_Node', $node);
 
-        $this->assertTrue($node->hasAttribute('minify'));
-        if (isset($test['minify'])) {
-            $this->assertEquals($test['minify'], $node->getAttribute('minify'));
+        foreach (array('minify', 'bare') as $attr) {
+            $this->assertTrue($node->hasAttribute($attr));
+            if (isset($test[$attr])) {
+                $this->assertEquals($test[$attr], $node->getAttribute($attr));
+            }
         }
 
         $this->assertTrue($node->hasAttribute('script'));
@@ -56,6 +58,7 @@ EOF
 
         $this->assertCoffeeNode(
             array(
+                'bare'   => false,
                 'minify' => false,
                 'script' => 'square = (x) -> x * x',
             ),
@@ -75,8 +78,29 @@ EOF
 
         $this->assertCoffeeNode(
             array(
+                'bare'   => false,
                 'minify' => false,
                 'script' => '',
+            ),
+            $node
+        );
+    }
+
+    public function testParseBare()
+    {
+        $twig = $this->getTwigEnvironment();
+
+        $node = $twig->parse($twig->tokenize(<<<EOF
+{% coffee bare %}
+    Math.sin Math.PI
+{% endcoffee %}
+EOF
+        ))->getNode('body')->getNode(0);
+
+        $this->assertCoffeeNode(
+            array(
+                'bare'   => true,
+                'script' => 'Math.sin Math.PI',
             ),
             $node
         );
@@ -115,7 +139,6 @@ EOF
 
         $this->assertCoffeeNode(
             array(
-                'minify' => false,
                 'script' => 'console.log foo.bar',
             ),
             $node
@@ -152,7 +175,6 @@ EOF
 
         $this->assertCoffeeNode(
             array(
-                'minify' => false,
                 'script' => 'console.log foo',
             ),
             $node
@@ -173,7 +195,6 @@ EOF
 
         $this->assertCoffeeNode(
             array(
-                'minify' => false,
                 'script' => 'console.log foo',
             ),
             $node
