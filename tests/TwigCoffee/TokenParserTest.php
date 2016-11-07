@@ -2,14 +2,21 @@
 
 class TwigCoffee_TokenParserTest extends PHPUnit_Framework_TestCase
 {
+    /**
+     * @var Twig_Environment
+     */
+    protected $_twig;
+
     public function getTwigEnvironment()
     {
-        $twig = new Twig_Environment(null, array(
-            'autoescape' => false,
-            'optimizations' => 0,
-        ));
-        $twig->addTokenParser(new TwigCoffee_TokenParser());
-        return $twig;
+        if ($this->_twig === null) {
+            $this->_twig = new Twig_Environment(null, array(
+                'autoescape' => false,
+                'optimizations' => 0,
+            ));
+            $this->_twig->addTokenParser(new TwigCoffee_TokenParser());
+        }
+        return $this->_twig;
     }
 
     /**
@@ -27,13 +34,11 @@ class TwigCoffee_TokenParserTest extends PHPUnit_Framework_TestCase
             $this->assertEquals($test['minify'], $node->getAttribute('minify'));
         }
 
-        $this->assertTrue($node->hasNode('script'));
-        $this->assertInstanceOf('Twig_Node_Text', $node->getNode('script'));
-
+        $this->assertTrue($node->hasAttribute('script'));
         if (isset($test['script'])) {
             $this->assertEquals(
                 trim($test['script']),
-                trim($node->getNode('script')->getAttribute('data'))
+                trim($node->getAttribute('script'))
             );
         }
     }

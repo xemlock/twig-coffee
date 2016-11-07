@@ -37,19 +37,23 @@ class TwigCoffee_TokenParser extends Twig_TokenParser
 
         $stream->expect(Twig_Token::BLOCK_END_TYPE);
 
-        $script = $this->parser->subparse(array($this, 'decideIfEnd'), true);
+        $contents = $this->parser->subparse(array($this, 'decideIfEnd'), true);
 
-        if (!$script->hasAttribute('data')) {
-            // if node has subnodes no data means that it's not a constant sctring
-            if (count($script)) {
+
+        if (!$contents->hasAttribute('data')) {
+            // if node has subnodes, and no data means that it's not a constant sctring
+            if (count($contents)) {
                 throw new Twig_Error_Syntax('CoffeeScript source must not contain any Twig tags');
             }
-            $script = new Twig_Node_Text('', $script->getTemplateLine());
+            $script = '';
+        } else {
+            $script = (string) $contents->getAttribute('data');
         }
+        $attributes['script'] = $script;
 
         $stream->expect(Twig_Token::BLOCK_END_TYPE);
 
-        return new TwigCoffee_Node(compact('script', 'variables'), $attributes, $token->getLine(), $this->getTag());
+        return new TwigCoffee_Node(compact('variables'), $attributes, $token->getLine(), $this->getTag());
     }
 
     /**
@@ -93,6 +97,10 @@ class TwigCoffee_TokenParser extends Twig_TokenParser
         return true;
     }
 
+    /**
+     * @return Twig_Node_Expression_Name
+     * @throws Twig_Error_Syntax
+     */
     public function parseVariableName()
     {
         $stream = $this->parser->getStream();
@@ -107,6 +115,10 @@ class TwigCoffee_TokenParser extends Twig_TokenParser
         return $name;
     }
 
+    /**
+     * @return Twig_Node_Expression_Array
+     * @throws Twig_Error_Syntax
+     */
     public function parseInlineHash()
     {
         $hash = $this->parser->getExpressionParser()->parseHashExpression();
