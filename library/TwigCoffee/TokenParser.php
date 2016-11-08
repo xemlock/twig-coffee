@@ -15,7 +15,7 @@ class TwigCoffee_TokenParser extends Twig_TokenParser
 
         $variables = null;
 
-        $attributes = array(
+        $options = array(
             'minify' => false,
             'bare'   => false,
         );
@@ -23,9 +23,9 @@ class TwigCoffee_TokenParser extends Twig_TokenParser
         // parse minify and bare attributes in either order
         while (true) {
             if ($stream->nextIf(Twig_Token::NAME_TYPE, 'minify')) {
-                $attributes['minify'] = true;
+                $options['minify'] = true;
             } elseif ($stream->nextIf(Twig_Token::NAME_TYPE, 'bare')) {
-                $attributes['bare'] = true;
+                $options['bare'] = true;
             } else {
                 break;
             }
@@ -48,11 +48,10 @@ class TwigCoffee_TokenParser extends Twig_TokenParser
         } else {
             $script = (string) $contents->getAttribute('data');
         }
-        $attributes['script'] = $script;
 
         $stream->expect(Twig_Token::BLOCK_END_TYPE);
 
-        return new TwigCoffee_Node(compact('variables'), $attributes, $token->getLine(), $this->getTag());
+        return new TwigCoffee_Node($script, $options, $variables, $token->getLine(), $this->getTag());
     }
 
     /**

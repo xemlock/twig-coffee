@@ -2,10 +2,22 @@
 
 class TwigCoffee_Node extends Twig_Node
 {
-    // nodes, attributes
-    public function __construct($nodes, $attributes, $line, $tag = null)
+    /**
+     * Constructor.
+     *
+     * @param string $script    CoffeeScript code
+     * @param array  $options   An array of options for CoffeeScript compiler
+     * @param int    $lineno    The line number corresponding to the occurrence of this Node
+     * @param null   $tag       The tag name associated with the Node
+     */
+    public function __construct($script, array $options = array(), Twig_NodeInterface $variables = null, $lineno = 0, $tag = null)
     {
-        parent::__construct($nodes, $attributes, $line, $tag);
+        $attributes = array(
+            'script' => (string) $script,
+            'bare'   => isset($options['bare']) && $options['bare'],
+            'minify' => isset($options['minify']) && $options['minify'],
+        );
+        parent::__construct(array('variables' => $variables), $attributes, $lineno, $tag);
     }
 
     public function compile(Twig_Compiler $compiler)
@@ -13,7 +25,7 @@ class TwigCoffee_Node extends Twig_Node
         $minify = 0&& $this->getAttribute('minify');
         $bare = 0&& $this->getAttribute('bare'); // no more applicable, as vars are passed via IIFE
 
-        $coffee = $this->getNode('script')->getAttribute('data');
+        $coffee = $this->getAttribute('script');
         $coffee = preg_replace('/^\s*<script([^>]*)>|<\/script>\s*$/i', '', $coffee);
         $coffee = "(vars) ->\n  " . trim(str_replace("\n", "\n  ", $coffee));
 

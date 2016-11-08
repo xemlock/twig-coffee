@@ -7,6 +7,9 @@ class TwigCoffee_TokenParserTest extends PHPUnit_Framework_TestCase
      */
     protected $_twig;
 
+    /**
+     * @return Twig_Environment
+     */
     public function getTwigEnvironment()
     {
         if ($this->_twig === null) {
@@ -40,13 +43,11 @@ class TwigCoffee_TokenParserTest extends PHPUnit_Framework_TestCase
         $this->assertInstanceOf('TwigCoffee_Node', $node);
 
         foreach (array('minify', 'bare') as $attr) {
-            $this->assertTrue($node->hasAttribute($attr));
             if (isset($test[$attr])) {
                 $this->assertEquals($test[$attr], $node->getAttribute($attr));
             }
         }
 
-        $this->assertTrue($node->hasAttribute('script'));
         if (isset($test['script'])) {
             $this->assertEquals(
                 trim($test['script']),
