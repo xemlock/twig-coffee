@@ -20,6 +20,30 @@ class TwigCoffee_Node extends Twig_Node
         parent::__construct(array('variables' => $variables), $attributes, $lineno, $tag);
     }
 
+    protected function extractVariableNames()
+    {
+        $variableNames = array();
+
+        if ($this->hasNode('variables')) {
+            $variables = $this->getNode('variables');
+            if ($variables instanceof Twig_Node_Expression_Name) {
+                $variableNames[$variables->getAttribute('name')] = null;
+            } elseif ($variables instanceof Twig_Node_Expression_Array) {
+                $prevNode = null;
+                foreach ($variables as $index => $node) {
+                    /** @var Twig_Node $node */
+                    /** @var Twig_Node $prevNode */
+                    if ($index % 2) {
+                        $variableNames[$prevNode->getAttribute('value')] = $node;
+                    }
+                    $prevNode = $node;
+                }
+            }
+        }
+
+        return array_keys($variableNames);
+    }
+
     public function compile(Twig_Compiler $compiler)
     {
         $minify = 0&& $this->getAttribute('minify');
@@ -27,15 +51,26 @@ class TwigCoffee_Node extends Twig_Node
 
         $coffee = $this->getAttribute('script');
         $coffee = preg_replace('/^\s*<script([^>]*)>|<\/script>\s*$/i', '', $coffee);
-        $coffee = "(vars) ->\n  " . trim(str_replace("\n", "\n  ", $coffee));
+        // $coffee = "(vars) ->\n  " . trim(str_replace("\n", "\n  ", $coffee));
+        $coffee = trim($coffee);
 
-        $js = CoffeeScript\Compiler::compile($coffee, array('bare' => true, 'header' => false));
+        echo '[[', "\n", $coffee, "\n]]\n";
+
+        // TODO at this point we must ensure that errors are not exceptions
+        // especially 'Uninitialized string offset 0'
+        $js = CoffeeScript\Compiler::compile($coffee, array(
+            'bare' => true,
+            'header' => false,
+            'filename' => __FILE__,
+        ));
         $js = trim($js, " \n\r\t;");
 
         if ($minify) {
             $js = TwigCoffee_Minifier::minify($js);
         }
         $js = '!' . $js; // expression mode
+
+        print_r($this->extractVariableNames());
 
         // 1. Render opening SCRIPT tag and optional opening IIFE wrapper
         $compiler
