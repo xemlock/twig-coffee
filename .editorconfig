@@ -5,7 +5,7 @@ root = true
 [*]
 end_of_line = LF
 
-[*.php]
+[*.{php,json}]
 indent_style = space
 indent_size = 4
 insert_final_newline = true
