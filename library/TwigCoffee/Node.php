@@ -44,10 +44,14 @@ class TwigCoffee_Node extends Twig_Node
         return array_keys($variableNames);
     }
 
+    /**
+     * @param Twig_Compiler $compiler
+     * @throws Exception
+     */
     public function compile(Twig_Compiler $compiler)
     {
         $minify = 0&& $this->getAttribute('minify');
-        $bare = 0&& $this->getAttribute('bare'); // no more applicable, as vars are passed via IIFE
+        $bare = $this->getAttribute('bare');
 
         $coffee = $this->getAttribute('script');
         $coffee = preg_replace('/^\s*<script([^>]*)>|<\/script>\s*$/i', '', $coffee);

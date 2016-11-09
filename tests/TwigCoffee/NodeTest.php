@@ -46,6 +46,6 @@ class TwigCoffee_NodeTest extends PHPUnit_Framework_TestCase
 EOF
         ));
 
-        // $result = $compiler->compile($node);
+        $result = $compiler->compile($node);
     }
 }
